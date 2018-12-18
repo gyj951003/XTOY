@@ -1,0 +1,139 @@
+//Load Input
+
+10: 81FF   read R[1]                     //0 for decryption, R0 for encryption
+11: 82FF   read R[2]                     //0
+12: 9201   M[01] <- R[2]                 //M1 store n
+13: 7301   R[3] <- 0001                  //R[3]: 1
+14: 741C   R[4] <- 001C                  //R[4]: address to store
+15: 7616   R[6] <- 0016                  //R[6] = 17
+16: C25C   if (R[2] == 0) goto 5C        
+17: 85FF   read R[5]                     //R[5]: Input
+18: B504   M[R[4]] <- R[5]               //store input to memory
+19: 1443   R[4] <- R[4] + R[3]           //R4++
+1A: 2223   R[2] <- R[2] - R[3]           //R2--
+1B: E600   goto R[6]                     //loop 16-21
+
+// 1C-3B Leave for storing t1-t32
+// 3C-5B Leave for storing s1-s32
+
+5C: D1A5   if (R[1] > 0) goto A5         //!!!
+5D: 743c   R[4] <- 003C                  
+5E: 7660   R[6] <- 0060                  
+5F: 8201   R[2] <- M[01]                 
+60: C279   if (R[2] == 0) goto 79        
+61: 85FF   read R[5]                     
+62: B504   M[R[4]] <- R[5]               
+63: 1443   R[4] <- R[4] + R[3]           
+64: 2223   R[2] <- R[2] - R[3]           
+65: E600   goto R[6]                     
+
+function XOR
+// Input: R4, R5
+// Output: R9
+// Intermediate: R3, R4, R5, RD, R9, RB, RC, RE
+66: 7900   R[9] <- 0000                  
+67: 7A10   R[A] <- 0010                  RA==15
+68: 7B69   R[B] <- 0069                  
+69: CA76   if (R[A] == 0) goto 76        //
+6A: 2AA3   R[A] <- R[A] - R[3]           
+6B: 6C4A   R[C] <- R[4] >> R[A]          
+6C: 6D5A   R[D] <- R[5] >> R[A]          
+6D: 2ECD   R[E] <- R[C] - R[D]           //both 0/1
+6E: 5CCA   R[C] <- R[C] << R[A]           
+6F: 5DDA   R[D] <- R[D] << R[A]          
+70: 244C   R[4] <- R[4] - R[C]           
+71: 255D   R[5] <- R[5] - R[D]           
+72: 5C3A   R[C] <- R[3] << R[A]                      
+73: CE75   if (R[E] == 0) goto 75                                      
+74: 199C   R[9] <- R[9] + R[C]           
+75: EB00   goto R[B]                     
+76: 99FF   write R[9]                    
+77: EF00   goto R[F]                     
+
+function decrypt
+// R2 R6 R7 R8                  
+79: 8201   R[2] <- M[01]                 
+7A: 92FF   write R[2]                    
+7B: 767E   R[6] <- 007E                  
+7C: 771C   R[7] <- 001C                  
+7D: 783C   R[8] <- 003C                  
+7E: C286   if (R[2] == 0) goto 86                     
+7F: A407   R[4] <- M[R[7]]               
+80: A508   R[5] <- M[R[8]]               
+81: FF66   R[F] <- PC; goto 66           
+82: 2223   R[2] <- R[2] - R[3]           
+83: 1773   R[7] <- R[7] + R[3]           
+84: 1883   R[8] <- R[8] + R[3]           
+85: E600   goto R[6]                     
+86: 0000   halt                          
+
+
+function generateRandomNumber
+//Seed: R1
+//Return:R5
+8A: 7704   R[7] <- 0004                  
+8B: 5517   R[5] <- R[1] << R[7]          
+8C: 1551   R[5] <- R[5] + R[1]           
+8D: 1553   R[5] <- R[5] + R[3]           
+8E: 770f   R[7] <- 000F                  
+8F: 6957   R[9] <- R[5] >> R[7]          //shift 15, get divisor
+90: 5997   R[9] <- R[9] << R[7]          
+91: 2559   R[5] <- R[5] - R[9]           
+92: 1150   R[1] <- R[5]                  
+93: EF00   goto R[F]                     
+
+
+function encrypt
+//Generate n keys
+A5: 7400   R[4] <- 0000                  
+A6: 94FF   write R[4]                    
+A7: 8201   R[2] <- M[01]                 
+A8: 92FF   write R[2]                    
+A9: 76AB   R[6] <- 00AB                  
+AA: 743C   R[4] <- 003C                  
+AB: C2B5   if (R[2] == 0) goto B5        
+AC: FF8A   R[F] <- PC; goto 8A           
+AD: B504   M[R[4]] <- R[5]                
+AE: 1443   R[4] <- R[4] + R[3]           
+AF: 2223   R[2] <- R[2] - R[3]           
+B0: E600   goto R[6]                     
+
+//Now, encrypt and write
+//R5, R6 to store key and word
+B5: 8201   R[2] <- M[01]                 
+B6: 771C   R[7] <- 001C                  
+B7: 783c   R[8] <- 003C                  
+B8: 76B9   R[6] <- 00B9                  
+B9: C2C5   if (R[2] == 0) goto C5        
+BA: A407   R[4] <- M[R[7]]               
+BB: A508   R[5] <- M[R[8]]               
+BC: FF66   R[F] <- PC; goto 66           
+BD: 2223   R[2] <- R[2] - R[3]           
+BE: 1773   R[7] <- R[7] + R[3]           
+BF: 1883   R[8] <- R[8] + R[3]                               
+C0: E600   goto R[6]                                        
+
+//Now, write keys
+C5: 8201   R[2] <- M[01]                 
+C6: 743C   R[4] <- 003C                  
+C7: 76C8   R[6] <- 00C8                  
+C8: C2CE   if (R[2] == 0) goto CE        
+C9: A504   R[5] <- M[R[4]]               
+CA: 95FF   write R[5]                    
+CB: 1443   R[4] <- R[4] + R[3]           
+CC: 2223   R[2] <- R[2] - R[3]           
+CD: E600   goto R[6]                     
+CE: 0000   halt                          
+
+
+
+
+
+
+
+
+
+
+
+
+
